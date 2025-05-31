@@ -1,0 +1,47 @@
+
+# Old method for showing lights
+void showLights(std::vector<Coords> trains) {
+  double latDist, lonDist;
+  Serial.println("\n--- Dist ---");
+
+  for (int i=0;i<NUM_LEDS;i++) leds[i].setRGB(25,25,25);
+  leds[DEBUG_LED].setRGB(0,0,0);
+
+  int trainNo = 0;
+  for (Stops stop : STOPS) {
+    Serial.println("Checking stop "+stop.stop_name);
+    for (Coords train : trains) {
+      lonDist = abs(train.lon-stop.lon);
+      latDist = abs(train.lat-stop.lat);
+
+      if (lonDist < DETECT_RANGE && latDist < DETECT_RANGE) {
+        Serial.println("  "+stop.stop_name+" is full ");
+
+        leds[stop.index].setHue(map(trainNo,0,trains.size(),0,255));
+      }
+      trainNo++;
+    }
+  }
+  FastLED.show();
+}
+
+# Config for the flinders train line
+const Stops STOPS[] = {
+  Stops(-35.0189727,138.5690239,0,"Flinders"),
+  Stops(-35.0095433,138.5672424,1,"Tonsley"),
+  Stops(-35.0019327,138.5668181,2,"Mitchell Park"),
+  Stops(-34.9821925,138.5673640,3,"Woodlands Park"),
+  Stops(-34.9720174,138.5712942,4,"Edwardstown"),
+  Stops(-34.9667332,138.5734255,5,"Emerson"),
+  Stops(-34.9720174,138.5712942,6,"Clarence Park"),
+  Stops(-34.9513205,138.5850539,7,"Goodwood"),
+  Stops(-34.9439191,138.5831178,8,"Adelaide Showground"),
+  Stops(-34.9251956,138.5800757,9,"Mile End"),
+  Stops(-34.9210179,138.5964521,10,"Adelaide Station"),
+};
+
+
+# Test data
+std::vector<Coords> testData = {
+  Coords(-34.982192, 138.56736,"FLNDRS")
+};
