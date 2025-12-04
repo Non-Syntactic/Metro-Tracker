@@ -5,7 +5,6 @@ import argparse
 from termcolor import cprint, colored as col
 import math
 
-
 # Set up the parser
 parser = argparse.ArgumentParser()
 
@@ -17,13 +16,11 @@ parser.add_argument("-s","--csv",help="File location to a csv file containing co
 
 args = parser.parse_args()
 
-
 FILE_PATH = 'stops.csv'
 STOP_DETECT_RADIUS = 100
 SAMPLE_RATE = 5
 
-
-# The route used to get metro data (don't touch)
+# The route used to get metro data
 api = 'https://gtfs.adelaidemetro.com.au/v1/realtime/vehicle_positions/debug'
 
 
@@ -41,12 +38,11 @@ def getStopsFromCSV():
             
         return tuple(data)
     except Exception as e:
-        cprint(f'Error while reading file! {FILE_PATH}\n{e}','red')
+        cprint(f'Error while reading file: \'{FILE_PATH}\'!\n{e}','red')
 
 def printTrackHeader():
     print(f'Tracking {col(args.target,"yellow")}...\n')
     print('| ROUTE  |  ID     | BEARING  |  SPD  |    LAT   |  LON   |')
-    return True
 
 # Source: GeeksForGeeks (https://www.geeksforgeeks.org/haversine-formula-to-find-distance-between-two-points-on-a-sphere/)
 def haversine(lat1, lon1, lat2, lon2):
@@ -68,53 +64,7 @@ def haversine(lat1, lon1, lat2, lon2):
     c = 2 * math.asin(math.sqrt(a))
     return round((rad * c)*1000)
     
-def getData(target: str):
-    # Get the api and error handling
-    for i in range(50):
-        try:
-            res = requests.get(api)
-            
-            if i > 0:
-                cprint('Connection Restored!\n','green')
-                printTrackHeader()
-            
-            break
-        except Exception as e:
-            cprint(e,'red')
-            print('Something went wrong requesting the API. Internet dropout?')
-            print(f'({i}/50) Trying again in {SAMPLE_RATE}...')
-            
-            sleep(SAMPLE_RATE)
-            
-    # Do a bit of passing and split it into each entity
-    res = res.text.replace('\n',',').replace(' ','').split('entity{')
-    
-    for i in res[1:-1]:
-        #route = str(i.split('route_id:')[1].split(',')[0].replace('"',''))
-        #if route == target:
-        if target in i:
-            route = str(i.split('route_id:')[1].split(',')[0].replace('"',''))
-            lat = float(i.split('latitude:')[1].split(',')[0])
-            lon = float(i.split('longitude:')[1].split(',')[0])
-            bearing = float(i.split('bearing:')[1].split(',')[0])
-            speed = round(float(i.split('speed:')[1].split(',')[0])*(18/5),2)
-            id = str(i.split('id:')[1].split(',')[0].replace('"',''))
-            break
-            
-    try:
-        vehical = {
-            'id': id,
-            'lat': lat,
-            'lon': lon,
-            'bearing': bearing,
-            'speed': speed,
-            'route': route
-        }
-        return vehical
-    except:
-        return False
-
-def getData2(key: str, vindex=None):
+def getData(key: str, vindex=None):
     # Get the api and error handling
     for i in range(50):
         try:
@@ -156,7 +106,7 @@ def getData2(key: str, vindex=None):
             if len(tracked) == 1:
                 return 0
             print(f'Found {col(len(tracked),"blue")} Results: {col([i["route"] for i in tracked],"yellow")}')
-                # Returning different data types is kinda wack 
+
             res = int(input(f'  Select A vehicle to track (0-{len(tracked)-1}): '))
 
             if res >= 0 and res < len(tracked):
@@ -181,12 +131,12 @@ STOPS = getStopsFromCSV()
 route_id = args.target
 
 if args.track:
-    vehicle_selection = getData2(args.target)
+    vehicle_selection = getData(args.target)
     
     global update_count
     update_count = 0
     while 1:
-        tracked = getData2(args.target,vehicle_selection)
+        tracked = getData(args.target,vehicle_selection)
         
         if not tracked:
             print(f'Could not find target {args.target}. Trying again in 5...')
@@ -201,17 +151,12 @@ if args.track:
                 print('\033[F'*len(STOPS))
             except:
                 pass
-            
+        
 
         # Print data
         print(f"  {col(tracked['route'],'yellow')} ({col(tracked['id'],'yellow')}) {col(str(tracked['bearing'])+'°','blue')}   {col(str(tracked['speed'])+'kph','cyan')}  {col(str(tracked['lat'])+' '+str(tracked['lon']),'red')}    ")
-        
-        cprint(f'  https://www.google.com/maps/place/{tracked["lat"]},{tracked["lon"]}/@-34.9593971,138.5439935,12.17z     ','green')
+        cprint(f"  https://www.google.com/maps/place/{tracked['lat']},{tracked['lon']}/@-34.9593971,138.5439935,12.17z     ",'green')
 
-        # Hightlights the tonsley line in google maps
-        #cprint(f'  https://www.google.com/maps/place/Flinders+Railway+Station/@{tracked["lon"]},{tracked["lat"]},11.54z/data=!4m6!3m5!1s0x6ab0d088ac2d3897:0xcda9ee205727e349!8m2!3d-35.018913!4d138.569226!16s%2Fg%2F11fmmb3zmr?entry=ttu&g_ep=EgoyMDI1MDQyMi4wIKXMDSoJLDEwMjExNjQwSAFQAw%3D%3D     ','green')
-        
-       
         if STOPS:
             print(f'DISTANCE ({FILE_PATH.split("/")[-1]}):')
             # Check if the vehical is at one of the tracked stops
@@ -224,20 +169,18 @@ if args.track:
                     
         try:
             sleep(SAMPLE_RATE)
-
         except KeyboardInterrupt:
             print("Stopping...")
-            exit()
-            
-            
+        exit()
+
         update_count += 1
         
 elif args.compass:
-    print(f'Tracking {args.target_route}')
-
+    print(f'Tracking {args.target}')
+    vehicle_selection = getData(args.target)
     while 1:
         # Sample some new data
-        tracked = getData(args.target_route)
+        tracked = getData(args.target,vehicle_selection)
         
         bearing = tracked['bearing']
         if bearing >= 315 or bearing <= 45:

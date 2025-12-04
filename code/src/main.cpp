@@ -68,7 +68,7 @@ const Stops STOPS[] = {
 // The Route IDs to be tracked
 const String TRACKED_ROUTES[] = {"SEAFRD","FLNDRS"};
 
-#define REFRESH_RATE 20000 // Delay in milliseconds until the board refreashes
+#define REFRESH_RATE 40000 // Delay in milliseconds until the board refreashes
 #define DISTANCE_MUL 20000 // Controls the *spread* of brightness for LEDs around the train
 
 #define CORE_DEBUG_LEVEL = 5
